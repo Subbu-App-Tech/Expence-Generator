@@ -1,4 +1,4 @@
-package com.example.expence_generator
+package com.subbu.expence_generator
 
 import io.flutter.embedding.android.FlutterActivity
 
