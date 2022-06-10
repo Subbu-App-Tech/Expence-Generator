@@ -86,29 +86,36 @@ class _ExpenceModelFormState extends State<ExpenceModelForm> {
         controller: TextEditingController(text: widget.model.details),
         onSubmitted: (v) => updateTotal(),
       );
-  Widget get typeCombox => Combobox<String>(
-        placeholder: const Text('Amount Type'),
-        items: [fixedAmount, ...uqTypes]
-            .map((e) => ComboboxItem(
-                value: e,
-                child: Text(e == fixedAmount ? fixedAmount : 'Percent of $e',
-                    maxLines: 1)))
-            .toList(),
-        isExpanded: true,
-        value: widget.model.type,
-        onChanged: (String? c) {
-          if (c != null) {
-            setState(() {
-              widget.model.type = c;
-              if (widget.model.type != fixedAmount) {
-                if (widget.model.value >= 100) {
-                  widget.model.value = 1;
-                }
+  Widget get typeCombox {
+    if (!uqTypes.contains(widget.model.type) &&
+        widget.model.type != fixedAmount) {
+      uqTypes.add(widget.model.type);
+    }
+    return Combobox<String>(
+      placeholder: const Text('Amount Type'),
+      items: [fixedAmount, ...uqTypes]
+          .map((e) => ComboboxItem(
+              value: e,
+              child: Text(e == fixedAmount ? fixedAmount : 'Percent of $e',
+                  maxLines: 1)))
+          .toList(),
+      isExpanded: true,
+      value: widget.model.type,
+      onChanged: (String? c) {
+        if (c != null) {
+          setState(() {
+            widget.model.type = c;
+            if (widget.model.type != fixedAmount) {
+              if (widget.model.value >= 100) {
+                widget.model.value = 1;
               }
-            });
-          }
-        },
-      );
+            }
+          });
+        }
+      },
+    );
+  }
+
   Widget get valueBox => TextBox(
         prefix:
             Text(widget.model.type == fixedAmount ? ' Amt: ' : ' Percent: '),

@@ -7,6 +7,10 @@ import 'package:fluent_ui/fluent_ui.dart';
 import 'package:expence_generator/apps/src/import_data.dart';
 import 'package:expence_generator/apps/src/Data/models.dart';
 import 'package:open_document/open_document.dart';
+import 'package:win32/win32.dart' as win;
+import 'package:path_provider_windows/path_provider_windows.dart' as path;
+import 'package:path_provider/path_provider.dart' as pth;
+import 'package:url_launcher/url_launcher.dart';
 
 final GlobalKey totalBoxKey = GlobalKey();
 
@@ -24,9 +28,7 @@ class ReportModel with ChangeNotifier {
     notifyListeners();
   }
 
-  Future loadData() async {
-    model = await db.getDatas();
-  }
+  Future loadData() async => model = await db.getDatas();
 
   double get getDataCredit =>
       datas.isEmpty ? 0 : datas.map((e) => e.credit).reduce((a, b) => a + b);
@@ -83,6 +85,7 @@ class ReportModel with ChangeNotifier {
     return GeneratedDataModel(
         amount: value,
         name: model.details,
+        interval: model.interval,
         times: times,
         varyRg: model.varyRange.floor(),
         varyDayRg: model.intervalRange);
@@ -101,7 +104,9 @@ class ReportModel with ChangeNotifier {
         int varDayRg =
             c.varyDayRg == 0 ? 0 : _next(-(c.varyDayRg + 1), c.varyDayRg + 1);
         double expence = c.amount + varAmtRg;
-        DateTime date = lastDt.add(Duration(days: 1 + varDayRg));
+        DateTime date = i == 0
+            ? lastDt
+            : lastDt.add(Duration(days: c.interval.dayEql + varDayRg));
         if (j >= gapCount) {
           j = 0;
           lastDt = date;
@@ -112,10 +117,10 @@ class ReportModel with ChangeNotifier {
             details: c.name,
             type: 'Expence',
             credit: 0,
-            debit: expence));
+            debit: expence.floor().toDouble().abs()));
       }
     }
-    datasGen.removeWhere((e) => e.credit == 0);
+    datasGen.removeWhere((e) => e.debit == 0);
     datasGenerated = datasGen;
   }
 
@@ -125,7 +130,9 @@ class ReportModel with ChangeNotifier {
   Future generateCSV() async {
     List<Model> datass = [...datas, ...datasGenerated];
     datass.sortList();
-    final file = await File('Data_Generated.csv').create(recursive: true);
+    final dir = await fileStorageDir;
+    final file =
+        await File('${dir.path}/Data_Generated.csv').create(recursive: true);
     String toWrite = Model.header.join(',');
     toWrite += '\n';
     for (var e in datass) {
@@ -133,7 +140,11 @@ class ReportModel with ChangeNotifier {
       toWrite += '\n';
     }
     await file.writeAsString(toWrite);
-    OpenDocument.openDocument(filePath: file.path);
+    if (Platform.isWindows) {
+      openFilePath(file.path);
+    } else {
+      OpenDocument.openDocument(filePath: file.path);
+    }
   }
 }
 
@@ -143,12 +154,14 @@ class GeneratedDataModel {
   int times;
   int varyRg;
   int varyDayRg;
+  DayInterval interval;
   GeneratedDataModel({
     required this.amount,
     required this.times,
     required this.varyRg,
     required this.varyDayRg,
     required this.name,
+    required this.interval,
   });
   double get total => times * amount;
 }
@@ -156,3 +169,27 @@ class GeneratedDataModel {
 // Future generateData(List<Model> modelsExist,List<> ) async {
 
 // }
+
+Future<Directory> get fileStorageDir async {
+  if (Platform.isWindows) {
+    String doc = win.FOLDERID_Downloads;
+    String? library = (await path.PathProviderWindows().getPath(doc));
+    // ignore: unnecessary_string_interpolations
+    Directory dir = await Directory('$library').create(recursive: true);
+    return dir;
+  } else {
+    Directory dir = (await pth.getExternalStorageDirectories(
+                type: pth.StorageDirectory.downloads))
+            ?.first ??
+        await pth.getDownloadsDirectory() ??
+        await pth.getApplicationSupportDirectory();
+    return dir;
+  }
+}
+
+Future openFilePath(String path) async {
+  final url = Uri.parse('file:$path');
+  if (await canLaunchUrl(url)) {
+    await launchUrl(url);
+  }
+}

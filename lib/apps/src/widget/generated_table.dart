@@ -49,7 +49,7 @@ class GeneratedReportForImport extends StatelessWidget {
         Provider.of<ReportModel>(context, listen: false).datasGenerated;
     datas.sortList();
     double total =
-        datas.isEmpty ? 0 : datas.map((e) => e.credit).reduce((a, b) => a + b);
+        datas.isEmpty ? 0 : datas.map((e) => e.debit).reduce((a, b) => a + b);
     TableRow tableRow(Model e) {
       return TableRow(children: [
         Padding(
@@ -61,7 +61,7 @@ class GeneratedReportForImport extends StatelessWidget {
         Padding(
             padding: const EdgeInsets.all(5),
             child: Text(
-              e.credit == -0.1 ? '' : e.credit.toStringAsFixed(2),
+              e.debit == -0.1 ? '' : e.debit.toStringAsFixed(2),
               textAlign: TextAlign.right,
               maxLines: 1,
               style: TextStyle(
