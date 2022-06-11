@@ -9,7 +9,6 @@
 .history
 .svn/
 migrate_working_dir/
-.keystore.jks
 
 # IntelliJ related
 *.iml
@@ -32,6 +31,7 @@ migrate_working_dir/
 .pub-cache/
 .pub/
 /build/
+keystore.jks
 
 # Web related
 lib/generated_plugin_registrant.dart
