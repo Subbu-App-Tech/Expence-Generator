@@ -1,4 +1,4 @@
-// ignore_for_file: avoid_print
+// ignore_for_file: avoid_print, depend_on_referenced_packages
 import 'dart:io';
 import 'dart:math';
 import 'package:bot_toast/bot_toast.dart';
@@ -6,11 +6,11 @@ import 'package:expence_generator/apps/src/Data/shared_prefs.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:expence_generator/apps/src/import_data.dart';
 import 'package:expence_generator/apps/src/Data/models.dart';
-import 'package:open_document/open_document.dart';
 import 'package:win32/win32.dart' as win;
 import 'package:path_provider_windows/path_provider_windows.dart' as path;
 import 'package:path_provider/path_provider.dart' as pth;
 import 'package:url_launcher/url_launcher.dart';
+import 'package:open_file/open_file.dart';
 
 final GlobalKey totalBoxKey = GlobalKey();
 
@@ -74,7 +74,7 @@ class ReportModel with ChangeNotifier {
       model.map((e) => getExpenceTotal(e)).toList();
 
   GeneratedDataModel getExpenceTotal(ExpenceInputModel model) {
-    double interv = dateRange.duration.inDays / (model.interval.dayEql);
+    double interv = model.interv(dateRange);
     double gap = model.intervalGap;
     int times = (interv * gap).floor();
     double value = model.type == fixedAmount
@@ -84,6 +84,7 @@ class ReportModel with ChangeNotifier {
             (interv * 100));
     return GeneratedDataModel(
         amount: value,
+        multipletimes: model.multipleTimes,
         name: model.details,
         interval: model.interval,
         times: times,
@@ -104,20 +105,25 @@ class ReportModel with ChangeNotifier {
         int varDayRg =
             c.varyDayRg == 0 ? 0 : _next(-(c.varyDayRg + 1), c.varyDayRg + 1);
         double expence = c.amount + varAmtRg;
-        DateTime date = i == 0
-            ? lastDt
-            : lastDt.add(Duration(days: c.interval.dayEql + varDayRg));
+        int daytoEdit = c.interval.dayEql + varDayRg;
+        DateTime date = i == 0 ? lastDt : lastDt.add(Duration(days: daytoEdit));
+        if (date.isBefore(dateRange.start) || date.isAfter(dateRange.end)) {
+          print('${c.name} => $expence | $date');
+          continue;
+        }
         if (j >= gapCount) {
           j = 0;
           lastDt = date;
         }
         j += 1;
+        double vvl = (expence / c.multipletimes).floor().toDouble().abs() *
+            c.multipletimes;
         datasGen.add(Model(
             date: date,
             details: c.name,
             type: 'Expence',
             credit: 0,
-            debit: expence.floor().toDouble().abs()));
+            debit: vvl));
       }
     }
     datasGen.removeWhere((e) => e.debit == 0);
@@ -135,7 +141,12 @@ class ReportModel with ChangeNotifier {
         await File('${dir.path}/Data_Generated.csv').create(recursive: true);
     String toWrite = Model.header.join(',');
     toWrite += '\n';
+    List<String> temp = [];
     for (var e in datass) {
+      if (!temp.contains(e.date.toDMYString)) {
+        toWrite += '\n';
+        temp.add(e.date.toDMYString);
+      }
       toWrite += e.toList.join(',');
       toWrite += '\n';
     }
@@ -143,7 +154,7 @@ class ReportModel with ChangeNotifier {
     if (Platform.isWindows) {
       openFilePath(file.path);
     } else {
-      OpenDocument.openDocument(filePath: file.path);
+      OpenFile.open(file.path);
     }
   }
 }
@@ -155,6 +166,7 @@ class GeneratedDataModel {
   int varyRg;
   int varyDayRg;
   DayInterval interval;
+  int multipletimes;
   GeneratedDataModel({
     required this.amount,
     required this.times,
@@ -162,6 +174,7 @@ class GeneratedDataModel {
     required this.varyDayRg,
     required this.name,
     required this.interval,
+    required this.multipletimes,
   });
   double get total => times * amount;
 }

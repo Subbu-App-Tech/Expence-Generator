@@ -2,7 +2,6 @@ import 'dart:io';
 
 // ignore: depend_on_referenced_packages
 import 'package:intl/intl.dart';
-import 'package:expence_generator/apps/sample.dart';
 import 'package:expence_generator/apps/src/Data/models.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:csv/csv.dart';

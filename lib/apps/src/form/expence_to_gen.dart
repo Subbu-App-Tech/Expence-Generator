@@ -131,23 +131,47 @@ class _ExpenceModelFormState extends State<ExpenceModelForm> {
         controller: _cont4,
       );
 
-  Widget get intervalCombox => Combobox<DayInterval>(
-        placeholder: const Text('Amount Type'),
-        items: DayInterval.values
-            .map(
-                (e) => ComboboxItem(value: e, child: Text(e.name, maxLines: 1)))
-            .toList(),
-        isExpanded: true,
-        value: widget.model.interval,
-        onChanged: (DayInterval? c) {
-          if (c != null) {
-            setState(() {
-              widget.model.interval = c;
-              widget.model.intervalGap = 1;
-            });
-          }
-        },
+  Widget get intervalCombox => Tooltip(
+        message: 'Expence Period',
+        child: Combobox<DayInterval>(
+          placeholder: const Text('Period Interval'),
+          items: DayInterval.values
+              .map((e) =>
+                  ComboboxItem(value: e, child: Text(e.name, maxLines: 1)))
+              .toList(),
+          isExpanded: true,
+          value: widget.model.interval,
+          onChanged: (DayInterval? c) {
+            if (c != null) {
+              setState(() {
+                widget.model.interval = c;
+                widget.model.intervalGap = 1;
+              });
+            }
+          },
+        ),
       );
+  Widget get timeMultipleCombox => Tooltip(
+        message: 'Value will be this times\n'
+            'Eg. if 10\'s, Then value will be 10,20,110...',
+        child: Combobox<int>(
+          placeholder: const Text('Amount Times'),
+          items: [1, 10, 100, 1000]
+              .map((e) => ComboboxItem(
+                  value: e, child: Text('$e\'s Times', maxLines: 1)))
+              .toList(),
+          isExpanded: true,
+          value: widget.model.multipleTimes,
+          onChanged: (int? c) {
+            if (c != null) {
+              setState(() {
+                widget.model.multipleTimes = c;
+              });
+            }
+          },
+        ),
+      );
+
   Widget get intervalBox => TextBox(
       suffix: Text(' Times a ', style: _prefixStyle),
       textAlign: TextAlign.right,
@@ -220,14 +244,16 @@ class _ExpenceModelFormState extends State<ExpenceModelForm> {
               children: [
                 Expanded(flex: 3, child: typeCombox),
                 const SizedBox(width: 5),
-                Expanded(flex: 2, child: valueBox)
+                Expanded(flex: 2, child: valueBox),
               ],
             ),
             Row(
               children: [
                 Expanded(flex: 2, child: intervalBox),
                 const SizedBox(width: 5),
-                Expanded(flex: 2, child: intervalCombox)
+                Expanded(flex: 2, child: intervalCombox),
+                const SizedBox(width: 5),
+                Expanded(flex: 1, child: timeMultipleCombox),
               ],
             ),
             Row(

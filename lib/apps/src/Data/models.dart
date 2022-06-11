@@ -55,6 +55,8 @@ class ExpenceInputModel {
   double intervalGap;
   int intervalRange;
   double varyRange;
+  int multipleTimes;
+
   ExpenceInputModel({
     required this.uqIdx,
     required this.details,
@@ -62,8 +64,9 @@ class ExpenceInputModel {
     this.value = 0,
     this.varyRange = 0,
     this.interval = DayInterval.day,
-    this.intervalGap = 1,
-    this.intervalRange = 1,
+    this.intervalGap = 0,
+    this.intervalRange = 0,
+    this.multipleTimes = 1,
   });
 
   Map<String, dynamic> toMap() {
@@ -95,6 +98,8 @@ class ExpenceInputModel {
   }
 
   String toJson() => json.encode(toMap());
+
+  double interv(dateRange) => dateRange.duration.inDays / (interval.dayEql);
 
   factory ExpenceInputModel.fromJson(String source) =>
       ExpenceInputModel.fromMap(json.decode(source));

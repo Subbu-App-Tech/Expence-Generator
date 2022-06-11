@@ -22,15 +22,14 @@ class MyHome extends StatelessWidget {
             providers: [
               ChangeNotifierProvider(create: (_) => model),
             ],
-            child: MaterialApp(
+            child: f.FluentApp(
+              title: 'Expence Generator',
               builder: BotToastInit(),
               navigatorObservers: [BotToastNavigatorObserver()],
-              title: 'Expence Generator',
-              home: f.FluentApp(
-                  home: snapshot.connectionState != ConnectionState.done
-                      ? const f.ScaffoldPage(
-                          content: f.Center(child: f.ProgressRing()))
-                      : const HomePg()),
+              home: snapshot.connectionState != ConnectionState.done
+                  ? const f.ScaffoldPage(
+                      content: f.Center(child: f.ProgressRing()))
+                  : const Material(child: HomePg()),
             ),
           );
         });
