@@ -6,6 +6,8 @@ import 'package:intl/intl.dart';
 extension DateExt on DateTime {
   DateTime get toStartOfDay => DateTime(year, month, day);
   String get toDMYString => DateFormat('dd/MM/yyyy').format(this);
+  String get toDay => DateFormat('EEEE').format(this);
+  // 
 }
 
 extension ModelListExt on List<Model> {

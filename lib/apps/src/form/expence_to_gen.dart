@@ -5,16 +5,17 @@ import 'package:expence_generator/apps/src/Data/models.dart';
 import 'package:expence_generator/apps/src/Data/provider.dart';
 
 class ExpensesTogenerate extends StatefulWidget {
-  const ExpensesTogenerate({Key? key, required this.model}) : super(key: key);
-  final ReportModel model;
+  const ExpensesTogenerate({Key? key}) : super(key: key);
 
   @override
   State<ExpensesTogenerate> createState() => _ExpensesTogenerateState();
 }
 
 class _ExpensesTogenerateState extends State<ExpensesTogenerate> {
+  List<ExpenceInputModel> models = [];
   @override
   Widget build(BuildContext context) {
+    models = Provider.of<ReportModel>(context).model;
     return Padding(
       padding: const EdgeInsets.all(4.0),
       child: Column(
@@ -26,7 +27,8 @@ class _ExpensesTogenerateState extends State<ExpensesTogenerate> {
               const Spacer(),
               m.ElevatedButton.icon(
                   onPressed: () {
-                    widget.model.addEmptyModel();
+                    Provider.of<ReportModel>(context, listen: false)
+                        .addEmptyModel();
                     setState(() {});
                     totalBoxKey.currentState?.setState(() {});
                   },
@@ -38,14 +40,14 @@ class _ExpensesTogenerateState extends State<ExpensesTogenerate> {
             separatorBuilder: (_, __) => const Divider(),
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: widget.model.model.length,
+            itemCount: models.length,
             itemBuilder: (context, int i) {
               return ExpenceModelForm(
-                model: widget.model.model[i],
+                model: models[i],
                 idx: i + 1,
                 onDelete: () {
-                  widget.model.removeModel(widget.model.model[i].uqIdx);
-                  widget.model.notify();
+                  Provider.of<ReportModel>(context, listen: false)
+                      .removeModel(models[i].uqIdx, true);
                 },
               );
             },

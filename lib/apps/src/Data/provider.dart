@@ -2,6 +2,7 @@
 import 'dart:io';
 import 'dart:math';
 import 'package:bot_toast/bot_toast.dart';
+import 'package:csv/csv.dart';
 import 'package:expence_generator/apps/src/Data/shared_prefs.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:expence_generator/apps/src/import_data.dart';
@@ -42,6 +43,7 @@ class ReportModel with ChangeNotifier {
       return;
     }
     datas.sort(((a, b) => a.date.compareTo(b.date)));
+    print('${datas.length} | ${datas.first} | ${datas.last}');
     DateTime firstDay =
         datas.first.date.toDMYString == datas.last.date.toDMYString
             ? datas.first.date.subtract(const Duration(days: 7))
@@ -77,24 +79,28 @@ class ReportModel with ChangeNotifier {
     double interv = model.interv(dateRange);
     double gap = model.intervalGap;
     int times = (interv * gap).floor();
+    int tored = daysToAvoid.isEmpty ? 0 : times ~/ (7 * daysToAvoid.length);
     double value = model.type == fixedAmount
         ? model.value
         : (datas.where((e) => e.type == model.type).toList().diff *
             model.value /
             (interv * 100));
+    value = value / gap;
+    value = (value * times) / (times - tored);
     return GeneratedDataModel(
         amount: value,
         multipletimes: model.multipleTimes,
         name: model.details,
         interval: model.interval,
-        times: times,
+        isAvailableOnFreeDay: true,
+        times: times - tored,
         varyRg: model.varyRange.floor(),
         varyDayRg: model.intervalRange);
   }
 
   void notify() => notifyListeners();
 
-  Future generateModel() async {
+  void generateModel() {
     List<Model> datasGen = [];
     for (var c in getGenModelForAllModel) {
       int gapCount = (c.times / dateRange.duration.inDays).floor();
@@ -107,15 +113,17 @@ class ReportModel with ChangeNotifier {
         double expence = c.amount + varAmtRg;
         int daytoEdit = c.interval.dayEql + varDayRg;
         DateTime date = i == 0 ? lastDt : lastDt.add(Duration(days: daytoEdit));
-        if (date.isBefore(dateRange.start) || date.isAfter(dateRange.end)) {
-          print('${c.name} => $expence | $date');
-          continue;
-        }
         if (j >= gapCount) {
           j = 0;
           lastDt = date;
         }
         j += 1;
+        if (date.isBefore(dateRange.start) || date.isAfter(dateRange.end)) {
+          continue;
+        }
+        if (daysToAvoid.contains(date.toDay)) {
+          continue;
+        }
         double vvl = (expence / c.multipletimes).floor().toDouble().abs() *
             c.multipletimes;
         datasGen.add(Model(
@@ -130,27 +138,47 @@ class ReportModel with ChangeNotifier {
     datasGenerated = datasGen;
   }
 
+  List<String> daysToAvoid = [];
+  void updateDayToAvoid(String day) {
+    daysToAvoid.contains(day) ? daysToAvoid.remove(day) : daysToAvoid.add(day);
+    notifyListeners();
+  }
+
   final _random = Random();
   int _next(int min, int max) => min + _random.nextInt(max - min);
 
   Future generateCSV() async {
     List<Model> datass = [...datas, ...datasGenerated];
     datass.sortList();
+
     final dir = await fileStorageDir;
     final file =
         await File('${dir.path}/Data_Generated.csv').create(recursive: true);
-    String toWrite = Model.header.join(',');
-    toWrite += '\n';
+    List<List> data = [];
+    data.add(Model.header);
     List<String> temp = [];
+    List<double> crd = [];
+    List<double> deb = [];
     for (var e in datass) {
       if (!temp.contains(e.date.toDMYString)) {
-        toWrite += '\n';
         temp.add(e.date.toDMYString);
+        final ccb = crd.isEmpty ? 0 : crd.reduce((a, b) => a + b);
+        final ddb = deb.isEmpty ? 0 : deb.reduce((a, b) => a + b);
+        if (!(ccb == 0 && ddb == 0)) {
+          data.add([]);
+        }
+        crd = [];
+        deb = [];
+      } else {
+        crd.add(e.credit);
+        deb.add(e.debit);
+        if (!(e.credit == 0 && e.debit == 0)) {
+          data.add(e.toList);
+        }
       }
-      toWrite += e.toList.join(',');
-      toWrite += '\n';
     }
-    await file.writeAsString(toWrite);
+    final datatoWri = const ListToCsvConverter().convert(data);
+    await file.writeAsString(datatoWri);
     if (Platform.isWindows) {
       openFilePath(file.path);
     } else {
@@ -167,6 +195,7 @@ class GeneratedDataModel {
   int varyDayRg;
   DayInterval interval;
   int multipletimes;
+  bool isAvailableOnFreeDay;
   GeneratedDataModel({
     required this.amount,
     required this.times,
@@ -175,6 +204,7 @@ class GeneratedDataModel {
     required this.name,
     required this.interval,
     required this.multipletimes,
+    required this.isAvailableOnFreeDay,
   });
   double get total => times * amount;
 }

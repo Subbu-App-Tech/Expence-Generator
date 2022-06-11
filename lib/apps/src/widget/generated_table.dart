@@ -11,7 +11,7 @@ class GeneratedReportFromInput extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Future getData() async {
-      await Provider.of<ReportModel>(context, listen: false).generateModel();
+      Provider.of<ReportModel>(context, listen: false).generateModel();
     }
 
     return FutureBuilder(
