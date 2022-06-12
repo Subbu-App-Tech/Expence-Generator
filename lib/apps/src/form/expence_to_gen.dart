@@ -107,6 +107,9 @@ class _ExpenceModelFormState extends State<ExpenceModelForm> {
         if (c != null) {
           setState(() {
             widget.model.type = c;
+            if (widget.model.isFixedAmt) {
+              widget.model.isAvailableOnlyInDay = false;
+            }
             if (widget.model.type != fixedAmount) {
               if (widget.model.value >= 100) {
                 widget.model.value = 1;
@@ -203,19 +206,39 @@ class _ExpenceModelFormState extends State<ExpenceModelForm> {
           onSubmitted: (_) => updateTotal(),
         ),
       );
-
+  Widget percentCheckBx(Function() seSt) => ListTile(
+        contentPadding: const EdgeInsets.all(6),
+        leading: Checkbox(
+            checked: widget.model.isAvailableOnlyInDay,
+            onChanged: widget.model.isFixedAmt
+                ? null
+                : (b) {
+                    widget.model.isAvailableOnlyInDay =
+                        !widget.model.isAvailableOnlyInDay;
+                    seSt();
+                    updateTotal();
+                  }),
+        title: const Text('Only Generate on Available day'),
+        subtitle: const Text(
+            'This will only generate the percent of type on the day where type exist'),
+      );
   void updateTotal() {
+    if (widget.model.isFixedAmt) {
+      widget.model.isAvailableOnlyInDay = false;
+    }
     _key.currentState?.setState(() {});
     ReportModel.updateModel(widget.model);
     totalBoxKey.currentState?.setState(() {});
   }
 
   final GlobalKey _key = GlobalKey();
+  final GlobalKey _hideKey = GlobalKey();
 
   final TextEditingController _cont4 = TextEditingController();
   final TextEditingController _contintGap = TextEditingController();
   final TextEditingController _contintRg = TextEditingController();
   final TextEditingController _contvaryRange = TextEditingController();
+  bool isHide = true;
   @override
   Widget build(BuildContext context) {
     ReportModel.updateModel(widget.model);
@@ -255,21 +278,73 @@ class _ExpenceModelFormState extends State<ExpenceModelForm> {
                 const SizedBox(width: 5),
                 Expanded(flex: 2, child: intervalCombox),
                 const SizedBox(width: 5),
-                Expanded(flex: 1, child: timeMultipleCombox),
+                HideIcon(
+                    isHide: () => isHide,
+                    onTap: () {
+                      isHide = !isHide;
+                      _hideKey.currentState?.setState(() {});
+                    })
+                // Expanded(flex: 1, child: timeMultipleCombox),
               ],
             ),
-            Row(
-              children: [
-                Expanded(flex: 5, child: valueVaryBox),
-                const SizedBox(width: 5),
-                Expanded(flex: 4, child: intervalVaryBox),
-              ],
-            ),
+            StatefulBuilder(
+                key: _hideKey,
+                builder: (context, setSt) {
+                  return isHide
+                      ? const SizedBox.shrink()
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(flex: 5, child: valueVaryBox),
+                                const SizedBox(width: 5),
+                                Expanded(flex: 4, child: intervalVaryBox),
+                              ],
+                            ),
+                            Row(
+                              children: [
+                                const SizedBox(width: 5),
+                                const Expanded(
+                                    child: Text(
+                                        'The Generate Amount multiples: ')),
+                                const SizedBox(width: 7),
+                                Expanded(child: timeMultipleCombox),
+                              ],
+                            ),
+                            percentCheckBx(() => setSt(() {})),
+                          ],
+                        );
+                }),
             ExpenceModelSummary(key: _key, model: widget.model)
           ],
         ),
       ),
     );
+  }
+}
+
+class HideIcon extends StatefulWidget {
+  final Function() isHide;
+  final Function() onTap;
+  const HideIcon({Key? key, required this.isHide, required this.onTap})
+      : super(key: key);
+
+  @override
+  State<HideIcon> createState() => _HideIconState();
+}
+
+class _HideIconState extends State<HideIcon> {
+  @override
+  Widget build(BuildContext context) {
+    return FilledButton(
+        child: widget.isHide()
+            ? const Icon(FluentIcons.down)
+            : const Icon(FluentIcons.up),
+        onPressed: () {
+          widget.onTap();
+          setState(() {});
+        });
   }
 }
 
@@ -284,7 +359,7 @@ class ExpenceModelSummary extends StatefulWidget {
 class _ExpenceModelSummaryState extends State<ExpenceModelSummary> {
   @override
   Widget build(BuildContext context) {
-    TextStyle _symbStyle = const TextStyle(fontWeight: FontWeight.bold);
+    TextStyle symbStyle = const TextStyle(fontWeight: FontWeight.bold);
     final totals =
         Provider.of<ReportModel>(context).getExpenceTotal(widget.model);
     return Container(
@@ -294,11 +369,11 @@ class _ExpenceModelSummaryState extends State<ExpenceModelSummary> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            Text(totals.amount.toStringAsFixed(2) + ' ₹ '),
-            Text('x', style: _symbStyle),
-            Text(totals.times.toString() + ' # '),
-            Text(' = ', style: _symbStyle),
-            Text(totals.total.toStringAsFixed(2) + ' ₹ ', style: _symbStyle),
+            Text('${totals.amount.toStringAsFixed(2)} ₹ '),
+            Text('x', style: symbStyle),
+            Text('${totals.times} # '),
+            Text(' = ', style: symbStyle),
+            Text('${totals.total.toStringAsFixed(2)} ₹ ', style: symbStyle),
             Text('[ ± ${totals.varyRg.ceil()}]'),
           ],
         ),

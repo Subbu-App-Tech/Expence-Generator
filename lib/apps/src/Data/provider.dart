@@ -18,7 +18,6 @@ final GlobalKey totalBoxKey = GlobalKey();
 class ReportModel with ChangeNotifier {
   List<ExpenceInputModel> model = [];
   List<Model> datas = [];
-  List<Model> datasGenerated = [];
   DateTimeRange dateRange = DateTimeRange(
       start: DateTime.now().subtract(const Duration(days: 7)),
       end: DateTime.now());
@@ -37,13 +36,13 @@ class ReportModel with ChangeNotifier {
       datas.isEmpty ? 0 : datas.map((e) => e.debit).reduce((a, b) => a + b);
 
   Future getFile() async {
-    datas = await DataHandling().getFile();
+    datas = (await DataHandling().getFile()).sublist(0, 15);
+    print(datas.map((e) => '${e.toList}\n').toList());
     if (datas.isEmpty) {
       BotToast.showText(text: 'Please Select CSV File to Import Data');
       return;
     }
     datas.sort(((a, b) => a.date.compareTo(b.date)));
-    print('${datas.length} | ${datas.first} | ${datas.last}');
     DateTime firstDay =
         datas.first.date.toDMYString == datas.last.date.toDMYString
             ? datas.first.date.subtract(const Duration(days: 7))
@@ -91,53 +90,83 @@ class ReportModel with ChangeNotifier {
         amount: value,
         multipletimes: model.multipleTimes,
         name: model.details,
-        interval: model.interval,
-        isAvailableOnFreeDay: true,
+        model: model,
         times: times - tored,
-        varyRg: model.varyRange.floor(),
-        varyDayRg: model.intervalRange);
+        varyRg: model.varyRange.floor());
   }
 
   void notify() => notifyListeners();
 
   void generateModel() {
     List<Model> datasGen = [];
+
     for (var c in getGenModelForAllModel) {
-      int gapCount = (c.times / dateRange.duration.inDays).floor();
-      DateTime lastDt = dateRange.start;
-      int j = 0;
-      for (var i = 0; i < c.times; i++) {
-        int varAmtRg = c.varyRg == 0 ? 0 : _next(-(c.varyRg + 1), c.varyRg + 1);
-        int varDayRg =
-            c.varyDayRg == 0 ? 0 : _next(-(c.varyDayRg + 1), c.varyDayRg + 1);
-        double expence = c.amount + varAmtRg;
-        int daytoEdit = c.interval.dayEql + varDayRg;
-        DateTime date = i == 0 ? lastDt : lastDt.add(Duration(days: daytoEdit));
-        if (j >= gapCount) {
-          j = 0;
-          lastDt = date;
+      if (c.isAvailableOnlyInDay && uqDataTypes.contains(c.type)) {
+        final ft1 = datas.where((e) => e.type == c.type).toList();
+        final uqDate = ft1.map((e) => e.date.toStartOfDay).toSet();
+        for (var dt in uqDate) {
+          final ft2 =
+              ft1.where((e) => e.date.toDMYString == dt.toDMYString).map((e) {
+            return (e.credit + e.debit);
+          }).toList();
+          int varAmtRg = c.varyRg == 0 ? 0 : _next(0, c.varyRg + 1);
+          double expence = ft2.isEmpty
+              ? 0
+              : (ft2.reduce((a, b) => a + b)) * (c.model.value / 100);
+          double vvl = (((expence + varAmtRg) / c.multipletimes).floor().abs() *
+                  c.multipletimes)
+              .toDouble();
+          datasGen.add(
+            Model(
+                date: dt,
+                details: c.name,
+                type: '${c.type} - Expence',
+                credit: 0,
+                debit: vvl),
+          );
         }
-        j += 1;
-        if (date.isBefore(dateRange.start) || date.isAfter(dateRange.end)) {
-          continue;
+      } else {
+        int gapCount = (c.times / dateRange.duration.inDays).floor();
+        DateTime lastDt = dateRange.start;
+        int j = 0;
+        for (var i = 0; i < c.times; i++) {
+          int varDayRg =
+              c.varyDayRg == 0 ? 0 : _next(-(c.varyDayRg + 1), c.varyDayRg + 1);
+          int varAmtRg =
+              c.varyRg == 0 ? 0 : _next(-(c.varyRg + 1), c.varyRg + 1);
+          double expence = c.amount + varAmtRg;
+          int daytoEdit = c.interval.dayEql + varDayRg;
+          DateTime date =
+              i == 0 ? lastDt : lastDt.add(Duration(days: daytoEdit));
+          if (j >= gapCount) {
+            j = 0;
+            lastDt = date;
+          }
+          j += 1;
+          if (date.isBefore(dateRange.start) || date.isAfter(dateRange.end)) {
+            continue;
+          }
+          if (daysToAvoid.contains(date.toDay)) {
+            continue;
+          }
+          double vvl = (expence / c.multipletimes).floor().toDouble().abs() *
+              c.multipletimes;
+          datasGen.add(Model(
+              date: date,
+              details: c.name,
+              type: 'Expence',
+              credit: 0,
+              debit: vvl));
         }
-        if (daysToAvoid.contains(date.toDay)) {
-          continue;
-        }
-        double vvl = (expence / c.multipletimes).floor().toDouble().abs() *
-            c.multipletimes;
-        datasGen.add(Model(
-            date: date,
-            details: c.name,
-            type: 'Expence',
-            credit: 0,
-            debit: vvl));
       }
     }
+    print('1. ${datasGen.length}');
     datasGen.removeWhere((e) => e.debit == 0);
+    print('2. ${datasGen.length}');
     datasGenerated = datasGen;
   }
 
+  List<Model> datasGenerated = [];
   List<String> daysToAvoid = [];
   void updateDayToAvoid(String day) {
     daysToAvoid.contains(day) ? daysToAvoid.remove(day) : daysToAvoid.add(day);
@@ -150,7 +179,7 @@ class ReportModel with ChangeNotifier {
   Future generateCSV() async {
     List<Model> datass = [...datas, ...datasGenerated];
     datass.sortList();
-
+    print(datass);
     final dir = await fileStorageDir;
     final file =
         await File('${dir.path}/Data_Generated.csv').create(recursive: true);
@@ -169,12 +198,11 @@ class ReportModel with ChangeNotifier {
         }
         crd = [];
         deb = [];
-      } else {
-        crd.add(e.credit);
-        deb.add(e.debit);
-        if (!(e.credit == 0 && e.debit == 0)) {
-          data.add(e.toList);
-        }
+      }
+      crd.add(e.credit);
+      deb.add(e.debit);
+      if (!(e.credit == 0 && e.debit == 0)) {
+        data.add(e.toList);
       }
     }
     final datatoWri = const ListToCsvConverter().convert(data);
@@ -192,26 +220,21 @@ class GeneratedDataModel {
   double amount;
   int times;
   int varyRg;
-  int varyDayRg;
-  DayInterval interval;
   int multipletimes;
-  bool isAvailableOnFreeDay;
-  GeneratedDataModel({
-    required this.amount,
-    required this.times,
-    required this.varyRg,
-    required this.varyDayRg,
-    required this.name,
-    required this.interval,
-    required this.multipletimes,
-    required this.isAvailableOnFreeDay,
-  });
+  ExpenceInputModel model;
+  GeneratedDataModel(
+      {required this.amount,
+      required this.times,
+      required this.varyRg,
+      required this.name,
+      required this.multipletimes,
+      required this.model});
   double get total => times * amount;
+  String get type => model.type;
+  bool get isAvailableOnlyInDay => model.isAvailableOnlyInDay;
+  int get varyDayRg => model.intervalRange;
+  DayInterval get interval => model.interval;
 }
-
-// Future generateData(List<Model> modelsExist,List<> ) async {
-
-// }
 
 Future<Directory> get fileStorageDir async {
   if (Platform.isWindows) {

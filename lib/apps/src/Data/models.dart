@@ -56,6 +56,7 @@ class ExpenceInputModel {
   int intervalRange;
   double varyRange;
   int multipleTimes;
+  bool isAvailableOnlyInDay;
 
   ExpenceInputModel({
     required this.uqIdx,
@@ -67,8 +68,9 @@ class ExpenceInputModel {
     this.intervalGap = 0,
     this.intervalRange = 0,
     this.multipleTimes = 1,
+    this.isAvailableOnlyInDay = false,
   });
-
+  bool get isFixedAmt => type == fixedAmount;
   Map<String, dynamic> toMap() {
     final result = <String, dynamic>{};
     result.addAll({'uqIdx': uqIdx});
@@ -79,22 +81,27 @@ class ExpenceInputModel {
     result.addAll({'intervalGap': intervalGap});
     result.addAll({'intervalRange': intervalRange});
     result.addAll({'varyRange': varyRange});
+    result.addAll({'isAvailableOnlyInDay': isAvailableOnlyInDay});
+    result.addAll({'multipleTimes': multipleTimes});
+    //
 
     return result;
   }
 
   factory ExpenceInputModel.fromMap(Map<String, dynamic> map) {
     return ExpenceInputModel(
-      uqIdx: map['uqIdx'],
-      details: map['details'] ?? '',
-      type: map['type'] ?? '',
-      value: map['value']?.toDouble() ?? 0.0,
-      interval: DayInterval.values.firstWhere((e) => e.name == map['interval'],
-          orElse: () => DayInterval.day),
-      intervalGap: map['intervalGap']?.toDouble() ?? 0.0,
-      intervalRange: map['intervalRange']?.toInt() ?? 0,
-      varyRange: map['varyRange']?.toDouble() ?? 0.0,
-    );
+        uqIdx: map['uqIdx'],
+        details: map['details'] ?? '',
+        type: map['type'] ?? '',
+        value: map['value']?.toDouble() ?? 0.0,
+        interval: DayInterval.values.firstWhere(
+            (e) => e.name == map['interval'],
+            orElse: () => DayInterval.day),
+        intervalGap: map['intervalGap']?.toDouble() ?? 0.0,
+        intervalRange: map['intervalRange']?.toInt() ?? 0,
+        varyRange: map['varyRange']?.toDouble() ?? 0.0,
+        multipleTimes: map['multipleTimes'] ?? 1,
+        isAvailableOnlyInDay: map['isAvailableOnlyInDay'] ?? false);
   }
 
   String toJson() => json.encode(toMap());
