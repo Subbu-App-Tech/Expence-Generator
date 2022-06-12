@@ -36,8 +36,7 @@ class ReportModel with ChangeNotifier {
       datas.isEmpty ? 0 : datas.map((e) => e.debit).reduce((a, b) => a + b);
 
   Future getFile() async {
-    datas = (await DataHandling().getFile()).sublist(0, 15);
-    print(datas.map((e) => '${e.toList}\n').toList());
+    datas = (await DataHandling().getFile());
     if (datas.isEmpty) {
       BotToast.showText(text: 'Please Select CSV File to Import Data');
       return;
@@ -179,7 +178,6 @@ class ReportModel with ChangeNotifier {
   Future generateCSV() async {
     List<Model> datass = [...datas, ...datasGenerated];
     datass.sortList();
-    print(datass);
     final dir = await fileStorageDir;
     final file =
         await File('${dir.path}/Data_Generated.csv').create(recursive: true);

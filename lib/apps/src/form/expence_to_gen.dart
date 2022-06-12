@@ -292,28 +292,31 @@ class _ExpenceModelFormState extends State<ExpenceModelForm> {
                 builder: (context, setSt) {
                   return isHide
                       ? const SizedBox.shrink()
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(flex: 5, child: valueVaryBox),
-                                const SizedBox(width: 5),
-                                Expanded(flex: 4, child: intervalVaryBox),
-                              ],
-                            ),
-                            Row(
-                              children: [
-                                const SizedBox(width: 5),
-                                const Expanded(
-                                    child: Text(
-                                        'The Generate Amount multiples: ')),
-                                const SizedBox(width: 7),
-                                Expanded(child: timeMultipleCombox),
-                              ],
-                            ),
-                            percentCheckBx(() => setSt(() {})),
-                          ],
+                      : Padding(
+                          padding: const EdgeInsets.all(5.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(flex: 5, child: valueVaryBox),
+                                  const SizedBox(width: 5),
+                                  Expanded(flex: 4, child: intervalVaryBox),
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  const SizedBox(width: 5),
+                                  const Expanded(
+                                      child: Text(
+                                          'The Generate Amount multiples: ')),
+                                  const SizedBox(width: 7),
+                                  Expanded(child: timeMultipleCombox),
+                                ],
+                              ),
+                              percentCheckBx(() => setSt(() {})),
+                            ],
+                          ),
                         );
                 }),
             ExpenceModelSummary(key: _key, model: widget.model)
