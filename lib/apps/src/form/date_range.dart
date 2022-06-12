@@ -15,7 +15,7 @@ class _DateRangeFormState extends State<DateRangeForm> {
   Widget build(BuildContext context) {
     DateTimeRange range = context.select((ReportModel e) => e.dateRange);
     return Container(
-      padding: const EdgeInsets.all(5),
+      padding: const EdgeInsets.all(2),
       color: m.Colors.grey[100],
       child: Row(
         children: [

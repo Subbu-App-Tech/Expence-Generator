@@ -218,9 +218,11 @@ class _ExpenceModelFormState extends State<ExpenceModelForm> {
                     seSt();
                     updateTotal();
                   }),
+        isThreeLine: true,
         title: const Text('Only Generate on Available day'),
         subtitle: const Text(
-            'This will only generate the percent of type on the day where type exist'),
+            'This will only generate the percent of type on the day where type exist',
+            overflow: TextOverflow.clip),
       );
   void updateTotal() {
     if (widget.model.isFixedAmt) {
@@ -284,7 +286,6 @@ class _ExpenceModelFormState extends State<ExpenceModelForm> {
                       isHide = !isHide;
                       _hideKey.currentState?.setState(() {});
                     })
-                // Expanded(flex: 1, child: timeMultipleCombox),
               ],
             ),
             StatefulBuilder(
@@ -308,10 +309,12 @@ class _ExpenceModelFormState extends State<ExpenceModelForm> {
                                 children: [
                                   const SizedBox(width: 5),
                                   const Expanded(
+                                      flex: 3,
                                       child: Text(
-                                          'The Generate Amount multiples: ')),
-                                  const SizedBox(width: 7),
-                                  Expanded(child: timeMultipleCombox),
+                                          'The Generate Amount multiples:',
+                                          maxLines: 1)),
+                                  const SizedBox(width: 5),
+                                  Flexible(flex: 2, child: timeMultipleCombox),
                                 ],
                               ),
                               percentCheckBx(() => setSt(() {})),
